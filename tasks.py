@@ -1,6 +1,6 @@
 """Cross-platform task runner (no `make`).
 
-    python tasks.py up         # start Postgres via docker compose, create tables, seed
+    python tasks.py up         # start Postgres via docker compose, create tables, seed (--all: also api + worker)
     python tasks.py test       # run pytest (needs Postgres reachable at TEST_DATABASE_URL)
     python tasks.py demo       # run scripts/demo.py end to end with the configured provider
     python tasks.py calibrate  # LLM-vs-expected score deltas on the golden set
@@ -15,7 +15,9 @@ def _run(*args: str) -> int:
 
 
 def up() -> int:
-    code = subprocess.call(["docker", "compose", "up", "-d", "postgres"])
+    if "--all" in sys.argv[2:]:  # postgres + api + worker containers
+        return subprocess.call(["docker", "compose", "up", "-d", "--build", "--wait"])
+    code = subprocess.call(["docker", "compose", "up", "-d", "--wait", "postgres"])
     if code:
         return code
     return _run("-m", "app.bootstrap")

@@ -24,5 +24,5 @@ dev = ["pytest>=8"]
 testpaths = ["tests"]
 addopts = "-q"
 
-[tool.setuptools]
-packages = ["app"]
+[tool.setuptools.packages.find]
+include = ["app*"]

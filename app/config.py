@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/assess"
     test_database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/assess_test"
-    jwt_secret: str = "dev-only-change-me"
+    jwt_secret: str = "dev-only-change-me-use-a-long-random-secret-32b"
     upload_dir: str = "./uploads"
 
     llm_provider: str = "mock"  # mock | ollama | gemini

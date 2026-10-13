@@ -48,8 +48,6 @@ def test_start_evaluation_five_times_creates_one_job(api, engine):
 def test_concurrent_start_creates_one_active_job(api, engine):
     sub = make_submission(api)
     add_readme_artifact(api, sub["id"])
-    with session_scope() as s:
-        rubric_id = s.scalar(select(Job.rubric_id)) or api.c.get("/submissions", headers=api.h("admin@example.com")) and None
     from app.models import Rubric
     with session_scope() as s:
         rubric_id = s.scalar(select(Rubric.id))
