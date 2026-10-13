@@ -17,7 +17,8 @@ SCALES = (30, 10_000)
 
 
 def measure() -> list[dict]:
-    """One row per evaluation that made LLM calls."""
+    """One row per evaluation that made LLM calls. Tokens are cold-equivalent (cache hits keep their original
+    token counts); `cost` is what was actually billed after cache hits."""
     with db.session_scope() as s:
         rows = s.execute(
             select(
@@ -50,17 +51,18 @@ def render(rows: list[dict]) -> str:
         return "No LLM calls recorded yet. Run `python tasks.py demo` or `python tasks.py calibrate` first."
     out = [f"Reference price (assumption, not a quote): ${REFERENCE_PRICE_IN}/1M input tokens, "
            f"${REFERENCE_PRICE_OUT}/1M output tokens", ""]
-    out.append(f"{'evaluation':<38}{'status':<14}{'calls':>6}{'cached':>7}{'tok in':>9}{'tok out':>9}{'est $':>10}")
-    out.append("-" * 93)
+    out.append(f"{'evaluation':<38}{'status':<14}{'calls':>6}{'cached':>7}{'tok in':>9}{'tok out':>9}{'est $ cold':>12}{'est $ billed':>14}")
+    out.append("-" * 105)
     for r in rows:
         out.append(f"{r['job_id']:<38}{r['status']:<14}{r['calls']:>6}{r['cache_hits']:>7}"
-                   f"{r['tokens_in']:>9}{r['tokens_out']:>9}{r['cost']:>10.5f}")
+                   f"{r['tokens_in']:>9}{r['tokens_out']:>9}"
+                   f"{estimate_cost(r['tokens_in'], r['tokens_out']):>12.5f}{r['cost']:>14.5f}")
     n = Decimal(len(rows))
     avg_in = sum(Decimal(r["tokens_in"]) for r in rows) / n
     avg_out = sum(Decimal(r["tokens_out"]) for r in rows) / n
-    avg_calls = sum(Decimal(r["calls"] - r["cache_hits"]) for r in rows) / n
+    avg_calls = sum(Decimal(r["calls"]) for r in rows) / n  # cold: every call counted, cache hits included
     out += ["", f"Average per evaluation over {len(rows)}: {avg_in:.0f} tokens in, {avg_out:.0f} tokens out, "
-                f"{avg_calls:.1f} uncached LLM calls", "", "Projection (linear, no retries, no cache hits):",
+                f"{avg_calls:.1f} LLM calls (cold-equivalent; cache hits counted at their original size)", "", "Projection (linear, no retries, no cache hits):",
             f"{'submissions/day':>16}{'LLM calls/day':>15}{'tokens/day':>14}{'est $/day':>12}{'est $/30d':>12}{'calls/s avg':>13}"]
     for p in projection(avg_in, avg_out, avg_calls):
         out.append(f"{p['submissions_per_day']:>16,}{p['calls_per_day']:>15,}{p['tokens_per_day']:>14,}"

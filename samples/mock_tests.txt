@@ -1,0 +1,23 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\adusu\pc
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1
+collected 115 items
+
+tests\test_adapters.py ...............                                   [ 13%]
+tests\test_auth.py .....                                                 [ 17%]
+tests\test_calibrate_cost.py ...                                         [ 20%]
+tests\test_idempotency.py .......                                        [ 26%]
+tests\test_llm_gateway.py ........                                       [ 33%]
+tests\test_observability.py ....                                         [ 36%]
+tests\test_pipeline.py ...........                                       [ 46%]
+tests\test_queue.py ......                                               [ 51%]
+tests\test_review.py ...........                                         [ 60%]
+tests\test_routing.py ......                                             [ 66%]
+tests\test_rubrics.py ....                                               [ 69%]
+tests\test_security.py ..................................                [ 99%]
+tests\test_smoke.py .                                                    [100%]
+
+============================ 115 passed in 50.18s =============================

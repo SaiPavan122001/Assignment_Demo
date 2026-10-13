@@ -45,6 +45,8 @@ def test_cache_hit_costs_nothing_and_skips_provider(engine):
     assert r.cache_hit and p.calls == 1
     assert [c.cache_hit for c in calls()] == [False, True]
     assert calls()[1].cost_usd == 0
+    assert (calls()[1].tokens_in, calls()[1].tokens_out) == (100, 20)  # kept for cold-cost reporting
+    assert gw.tokens_used("j1") == 120  # ...but the hit does not count against the budget
 
 
 def test_cache_key_includes_rubric_version(engine):

@@ -1,0 +1,33 @@
+﻿Reference price (assumption, not a quote): $1.00/1M input tokens, $5.00/1M output tokens
+
+evaluation                            status         calls cached   tok in  tok out     est $
+---------------------------------------------------------------------------------------------
+e9261cf9-7748-46e0-ad03-329689bb3106  completed          9      1     3956      250   0.00521
+8bd21bb3-e55c-43c4-9a76-96b5630186b9  completed          6      6        0        0   0.00000
+49642736-f4c2-4e61-a94d-b4ad1b324fb5  completed          6      0     1765      193   0.00273
+32fed5aa-9fb3-486d-9b66-932d8b00c542  needs_review       6      6        0        0   0.00000
+38a62d42-403d-4fca-b859-c912e33f1721  needs_review       5      0     1318      152   0.00208
+76fd83dd-7e47-4654-b073-e887a7f24e9e  completed          9      9        0        0   0.00000
+8ba6e55c-881a-4b2e-a526-9e1d4d2a9e9e  completed          8      0     3742      250   0.00499
+a85a5736-a90f-4414-8dad-4037d6490f44  needs_review       5      5        0        0   0.00000
+24f8c2b3-9fe4-41e6-946f-f50f4cd5bddf  needs_review       5      5        0        0   0.00000
+058c9bfe-3ce3-4ac5-ac2c-c3f99269b47d  needs_review       5      5        0        0   0.00000
+4ac2a48b-e4a4-45a4-aa91-fb6172af7a44  completed          8      4     2844      206   0.00387
+f0bd8e1a-50d1-456b-a9b7-0c22301bd743  completed          9      9        0        0   0.00000
+f778e771-3992-436b-a05c-a1f0f71203e3  needs_review       6      0     1442      190   0.00239
+2c78e8a5-9514-447f-8ae9-c701a324e89b  needs_review       9      4     3074      211   0.00413
+658b7f5d-bbd6-4f46-bfb7-6d609fcb795e  needs_review       6      6        0        0   0.00000
+68452e16-d76a-4110-a310-9df6c9ebd889  needs_review       6      0     1448      190   0.00240
+7f6868c7-5577-4404-810a-a4760d0eb4b6  completed          6      6        0        0   0.00000
+b3921720-ec83-40bd-8814-d499eb1356c4  needs_review       6      0     1749      193   0.00271
+
+Average per evaluation over 18: 1185 tokens in, 102 tokens out, 3.0 uncached LLM calls
+
+Projection (linear, no retries, no cache hits):
+ submissions/day  LLM calls/day    tokens/day   est $/day   est $/30d  calls/s avg
+              30             90        38,621        0.05        1.53         0.00
+          10,000         30,000    12,873,888       16.95      508.55         0.35
+
+Caveats: token counts here come from the mock provider's chars/4 estimate and its short outputs;
+a real model will differ. The projection is arithmetic, not a capacity test: this POC was NOT run
+at 10,000/day and a single Postgres-queue worker would not be sized for it.

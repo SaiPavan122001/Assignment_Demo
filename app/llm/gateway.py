@@ -58,7 +58,7 @@ class LLMGateway:
             return 0
         with session_scope() as s:
             return int(s.scalar(select(func.coalesce(func.sum(LLMCall.tokens_in + LLMCall.tokens_out), 0))
-                                .where(LLMCall.job_id == job_id)) or 0)
+                                .where(LLMCall.job_id == job_id, LLMCall.cache_hit.is_(False))) or 0)
 
     def _log(self, job_id, purpose, key, tin, tout, latency_ms, cache_hit, ok):
         with session_scope() as s:
@@ -77,7 +77,8 @@ class LLMGateway:
             if hit:
                 cached = GatewayResponse(hit.response, hit.tokens_in, hit.tokens_out, True)
         if cached:
-            self._log(job_id, purpose, key, 0, 0, 0, True, True)  # cache hits consume no budget
+            # cache hits keep the original token counts (so cold cost can be reported) but cost $0 and no budget
+            self._log(job_id, purpose, key, cached.tokens_in, cached.tokens_out, 0, True, True)
             return cached
 
         used = self.tokens_used(job_id)
