@@ -67,16 +67,27 @@ def claim_job(worker: str, lease_seconds: int | None = None) -> Job | None:
         return s.get(Job, job.id)
 
 
-def _owned_update(s: Session, job_id: str, worker: str, **values) -> None:
+class VersionConflict(LeaseLost):
+    """Optimistic-lock failure: the row changed since this writer read it (its `version` is stale)."""
+
+
+def _owned_update(s: Session, job_id: str, worker: str, *, expected_version: int | None = None, **values) -> None:
+    """Conditional write: only the lease owner, and (when given) only if `version` is still what the caller read."""
     now = _now()
+    conds = [Job.id == job_id, Job.status == "running", Job.locked_by == worker]
+    if expected_version is not None:
+        conds.append(Job.version == expected_version)
     row = s.execute(
-        update(Job)
-        .where(Job.id == job_id, Job.status == "running", Job.locked_by == worker)
+        update(Job).where(*conds)
         .values(version=Job.version + 1, updated_at=now, **values)
         .returning(Job.id)
         .execution_options(synchronize_session=False)
     ).first()
     if row is None:
+        if expected_version is not None:
+            owner = s.execute(select(Job.status, Job.locked_by).where(Job.id == job_id)).first()
+            if owner and owner.status == "running" and owner.locked_by == worker:
+                raise VersionConflict(job_id)  # we still own it, but another writer got in first
         raise LeaseLost(job_id)
 
 
@@ -87,14 +98,17 @@ def heartbeat(job_id: str, worker: str, lease_seconds: int | None = None) -> Non
         _owned_update(s, job_id, worker, heartbeat_at=now, lease_expires_at=now + timedelta(seconds=lease))
 
 
-def save_checkpoint(job_id: str, worker: str, stage: str, output: dict) -> None:
+def save_checkpoint(job_id: str, worker: str, stage: str, output: dict, expected_version: int | None = None) -> None:
+    """Read-modify-write of the checkpoints JSON, guarded by the optimistic `version` column so a stale
+    writer cannot overwrite checkpoints written since it read the row (raises VersionConflict)."""
     now = _now()
     lease = get_settings().job_lease_seconds
     with session_scope() as s:
         job = s.get(Job, job_id)
         cps = {**(job.checkpoints or {}), stage: output}
         _owned_update(
-            s, job_id, worker, checkpoints=cps, stage=stage,
+            s, job_id, worker, expected_version=job.version if expected_version is None else expected_version,
+            checkpoints=cps, stage=stage,
             heartbeat_at=now, lease_expires_at=now + timedelta(seconds=lease),
         )
 

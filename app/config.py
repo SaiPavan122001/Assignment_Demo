@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    app_env: str = "dev"  # dev | test | prod. Only "test" enables SSRF_ALLOW_PRIVATE.
     database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/assess"
     test_database_url: str = "postgresql+psycopg://postgres:postgres@localhost:5432/assess_test"
     jwt_secret: str = "dev-only-change-me-use-a-long-random-secret-32b"

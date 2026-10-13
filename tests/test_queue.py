@@ -114,6 +114,29 @@ def test_stale_worker_cannot_overwrite_after_lease_lost(job_id):
         assert "extract" not in (s.get(Job, job_id).checkpoints or {})
 
 
+def test_optimistic_version_conflict_rejects_the_stale_writer(job_id):
+    """Two writers with the same identity read the row at version v. The first write wins and bumps the
+    version; the second, still holding v, is rejected and writes nothing."""
+    job = w.claim_job("w1")
+    v = job.version
+    w.save_checkpoint(job.id, "w1", "extract", {"from": "writer A"}, expected_version=v)
+    with session_scope() as s:
+        assert s.get(Job, job_id).version == v + 1
+    with pytest.raises(w.VersionConflict):
+        w.save_checkpoint(job.id, "w1", "facts", {"from": "writer B (stale)"}, expected_version=v)
+    with session_scope() as s:
+        row = s.get(Job, job_id)
+        assert row.version == v + 1 and set(row.checkpoints) == {"extract"}
+    # re-reading the current version lets the second writer proceed
+    w.save_checkpoint(job.id, "w1", "facts", {"from": "writer B"}, expected_version=v + 1)
+    with session_scope() as s:
+        assert set(s.get(Job, job_id).checkpoints) == {"extract", "facts"}
+
+
+def test_version_conflict_is_a_lease_lost_subclass_so_the_runner_stops(job_id):
+    assert issubclass(w.VersionConflict, w.LeaseLost)
+
+
 def test_two_workers_cannot_claim_same_job(job_id):
     assert w.claim_job("w1") is not None
     assert w.claim_job("w2") is None

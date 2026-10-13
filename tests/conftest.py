@@ -2,6 +2,7 @@ import os
 import tempfile
 
 os.environ.setdefault("UPLOAD_DIR", tempfile.mkdtemp(prefix="eval-uploads-"))
+os.environ["APP_ENV"] = "test"  # SSRF_ALLOW_PRIVATE is honored only in this mode
 
 import pytest
 from sqlalchemy import create_engine, text

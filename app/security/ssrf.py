@@ -9,6 +9,7 @@ Known limitation: validation and connection each resolve DNS, so a DNS-rebinding
 closed (production would pin the validated IP in a custom transport / use an egress proxy).
 """
 import ipaddress
+import logging
 import os
 import socket
 import time
@@ -17,6 +18,10 @@ from typing import Callable
 from urllib.parse import urljoin, urlparse
 
 import httpx
+
+from app.config import get_settings
+
+log = logging.getLogger("ssrf")
 
 
 class SSRFBlocked(Exception):
@@ -32,9 +37,24 @@ class FetchResult:
     truncated: bool
 
 
+_warned = False
+
+
 def _allow_private() -> bool:
-    """Test-only escape hatch so integration tests can hit a local HTTP server. Off by default."""
-    return os.environ.get("SSRF_ALLOW_PRIVATE", "").lower() == "true"
+    """Test-only escape hatch so integration tests can hit a local HTTP server.
+
+    Honored ONLY when APP_ENV=test. In any other environment the variable is ignored and a warning is logged.
+    """
+    global _warned
+    if os.environ.get("SSRF_ALLOW_PRIVATE", "").lower() != "true":
+        return False
+    env = (os.environ.get("APP_ENV") or get_settings().app_env).lower()
+    if env == "test":
+        return True
+    if not _warned:
+        _warned = True
+        log.warning("SSRF_ALLOW_PRIVATE is set but APP_ENV=%r is not 'test'; ignoring it (SSRF guard stays on)", env)
+    return False
 
 
 def is_blocked_ip(ip: str) -> bool:
