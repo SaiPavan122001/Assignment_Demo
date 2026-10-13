@@ -153,10 +153,13 @@ def run_job(job: Job, worker: str, stages: list[tuple[str, StageFn]], finalize: 
     try:
         for name, fn in stages:
             if name in ctx.prior:
-                log.info("skip finished stage", extra={"job_id": job.id, "stage": name})
+                log.info("skip finished stage", extra={"job_id": job.id, "submission_id": job.submission_id, "stage": name})
                 continue
+            t0 = time.monotonic()
             out = fn(ctx)
             save_checkpoint(job.id, worker, name, out)
+            log.info("stage done", extra={"job_id": job.id, "submission_id": job.submission_id, "stage": name,
+                                          "duration_ms": int((time.monotonic() - t0) * 1000)})
             ctx.prior[name] = out
         with session_scope() as s:
             j = s.get(Job, job.id)
@@ -164,10 +167,10 @@ def run_job(job: Job, worker: str, stages: list[tuple[str, StageFn]], finalize: 
             _owned_update(s, job.id, worker, status=final, locked_by=None, lease_expires_at=None)
             return final
     except LeaseLost:
-        log.warning("lease lost", extra={"job_id": job.id})
+        log.warning("lease lost", extra={"job_id": job.id, "submission_id": job.submission_id})
         return "lease_lost"
     except Exception as e:  # noqa: BLE001 - any stage error is a retryable job failure
-        log.exception("stage failed", extra={"job_id": job.id})
+        log.exception("stage failed", extra={"job_id": job.id, "submission_id": job.submission_id})
         try:
             return release_failed(job.id, worker, f"{type(e).__name__}: {e}")
         except LeaseLost:
@@ -182,7 +185,10 @@ def run_once(worker: str, stages: list[tuple[str, StageFn]], finalize: Finalizer
 
 
 def main() -> None:  # pragma: no cover - long-running loop
+    from app.logging_setup import setup_logging
     from app.pipeline.stages import FINALIZE, STAGES  # imported lazily: pipeline needs the DB
+
+    setup_logging()
 
     wid = worker_id()
     last_reap = 0.0
