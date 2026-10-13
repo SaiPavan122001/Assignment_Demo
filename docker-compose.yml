@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: assess
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 20
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment: &env
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/assess
+      JWT_SECRET: dev-only-change-me
+      UPLOAD_DIR: /data/uploads
+      LLM_PROVIDER: ${LLM_PROVIDER:-mock}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    depends_on:
+      postgres: {condition: service_healthy}
+    ports: ["8000:8000"]
+    volumes: [uploads:/data/uploads]
+
+  worker:
+    build: .
+    command: python -m app.queue.worker
+    environment: *env
+    depends_on:
+      postgres: {condition: service_healthy}
+    volumes: [uploads:/data/uploads]
+
+volumes:
+  pgdata:
+  uploads:
