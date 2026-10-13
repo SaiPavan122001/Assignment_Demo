@@ -1,3 +1,8 @@
+import os
+import tempfile
+
+os.environ.setdefault("UPLOAD_DIR", tempfile.mkdtemp(prefix="eval-uploads-"))
+
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
@@ -34,3 +39,40 @@ def clean_db(engine):
     with engine.begin() as c:
         c.execute(text(f"truncate {names} restart identity cascade"))
     yield
+
+
+@pytest.fixture
+def seeded(engine):
+    from app.auth import seed_users
+    from app.db import session_scope
+    from app.rubrics import seed_rubric
+    with session_scope() as s:
+        seed_users(s)
+        r = seed_rubric(s)
+        return {"rubric_id": r.id}
+
+
+@pytest.fixture
+def client(seeded):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    return TestClient(app)
+
+
+class Api:
+    """Tiny helper: logs in as a seeded user and returns auth headers."""
+    def __init__(self, client):
+        self.c = client
+        self._tokens = {}
+
+    def h(self, email: str, **extra) -> dict:
+        if email not in self._tokens:
+            r = self.c.post("/auth/login", json={"email": email, "password": "password"})
+            assert r.status_code == 200, r.text
+            self._tokens[email] = r.json()["access_token"]
+        return {"Authorization": f"Bearer {self._tokens[email]}", **extra}
+
+
+@pytest.fixture
+def api(client):
+    return Api(client)

@@ -68,6 +68,7 @@ class Artifact(Base):
     type: Mapped[str] = mapped_column(String(30))  # github|zip|pdf|documentation|live_url|google_drive|video
     source_ref: Mapped[str | None] = mapped_column(Text)  # URL or original filename
     storage_key: Mapped[str | None] = mapped_column(Text)  # uploaded file location in Storage
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)  # e.g. {"transcript_key": ...}
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
