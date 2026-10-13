@@ -1,8 +1,8 @@
-# AI-Powered Project Evaluation Platform — proof of concept
+﻿# AI-Powered Project Evaluation Platform â€” proof of concept
 
 A small, runnable POC of the **core logic** of an automated project-evaluation platform: submissions with
-seven artifact types go through a queue-backed pipeline (extract → deterministic facts → summaries →
-one LLM call per rubric criterion → aggregate → route), and a human reviewer can approve, override,
+seven artifact types go through a queue-backed pipeline (extract â†’ deterministic facts â†’ summaries â†’
+one LLM call per rubric criterion â†’ aggregate â†’ route), and a human reviewer can approve, override,
 reject and publish results.
 
 It costs nothing to run: no cloud accounts, no paid services. The default LLM is a **deterministic mock**.
@@ -35,13 +35,13 @@ Other commands: `python tasks.py test | calibrate | cost`. Interactive API docs:
 `uvicorn app.main:app` and open `/docs`. Seeded dev logins (password `password`): `student1@example.com`,
 `student2@example.com`, `evaluator@example.com`, `admin@example.com`.
 
-**How this was actually run:** Windows 11, Python 3.12.10, a *portable PostgreSQL 16.15* — **no Docker on
+**How this was actually run:** Windows 11, Python 3.12.10, a *portable PostgreSQL 16.15* â€” **no Docker on
 that machine**, so `tasks.py up` (which calls `docker compose`) was never executed. Without Docker, point
 `DATABASE_URL` (and `TEST_DATABASE_URL` for tests) at any Postgres 16 (defaults in `.env.example`), run
 `python -m app.bootstrap` once, then `python tasks.py test | demo | calibrate | cost`. That is the path
 that was verified. Nothing here was run on macOS or Linux.
 
-> **Security warning — `SSRF_ALLOW_PRIVATE`.** A test-only switch that lets the SSRF guard reach loopback
+> **Security warning â€” `SSRF_ALLOW_PRIVATE`.** A test-only switch that lets the SSRF guard reach loopback
 > addresses. It is honored **only when `APP_ENV=test`**; in any other environment it is ignored and a
 > warning is logged (tested in `tests/test_hardening.py`). It is deliberately absent from `.env.example`.
 > Never set `APP_ENV=test` in a deployment.
@@ -85,44 +85,44 @@ flowchart LR
 | POC piece | Production counterpart it is shaped to be replaced by |
 |---|---|
 | Postgres `jobs` + `outbox` (SKIP LOCKED, lease, reaper, `dead` = DLQ) | a managed queue such as SQS with a DLQ |
-| `Storage` interface → local folder | an object store such as S3 |
-| `LLMGateway` → mock / ollama / gemini | a managed model endpoint (Bedrock / Claude API) behind the same gateway |
+| `Storage` interface â†’ local folder | an object store such as S3 |
+| `LLMGateway` â†’ mock / ollama / gemini | a managed model endpoint (Bedrock / Claude API) behind the same gateway |
 | JSON logs + `GET /metrics` | CloudWatch / OpenTelemetry / an LLM-tracing tool such as Langfuse |
 | Seeded users + JWT | an identity provider |
 | ZIP validation + SSRF guard | the same code plus a sandboxed fetcher / egress proxy and a malware scanner |
 
 ## Status
 
-Every row is exactly one of: **Implemented and tested** (an automated test in `tests/` passes) ·
-**Implemented, not tested** · **Fixture only** (works against local fixtures, not the real service) ·
-**Written, not run** · **Not implemented**.
+Every row is exactly one of: **Implemented and tested** (an automated test in `tests/` passes) Â·
+**Implemented, not tested** Â· **Fixture only** (works against local fixtures, not the real service) Â·
+**Written, not run** Â· **Not implemented**.
 
 ### Features
 
 | Feature | Status | Evidence / caveat |
 |---|---|---|
-| Idempotent create (same `Idempotency-Key` → one submission, per user) | Implemented and tested | `test_idempotency.py` |
-| Start-evaluation ×5 → one job; concurrent start → one active job (`uq_active_job`) | Implemented and tested | `test_start_evaluation_five_times_creates_one_job`, 8 threads behind a barrier |
+| Idempotent create (same `Idempotency-Key` â†’ one submission, per user) | Implemented and tested | `test_idempotency.py` |
+| Start-evaluation Ã—5 â†’ one job; concurrent start â†’ one active job (`uq_active_job`) | Implemented and tested | `test_start_evaluation_five_times_creates_one_job`, 8 threads behind a barrier |
 | Worker claim (SKIP LOCKED), lease, heartbeat, stale-worker fencing | Implemented and tested | `test_queue.py` |
-| Crash mid-stage → reaper requeues → resumes without redoing finished stages | Implemented and tested | crash simulated with a `BaseException` |
-| Job → `dead` after N failures / via lease expiry | Implemented and tested | `test_queue.py` |
+| Crash mid-stage â†’ reaper requeues â†’ resumes without redoing finished stages | Implemented and tested | crash simulated with a `BaseException` |
+| Job â†’ `dead` after N failures / via lease expiry | Implemented and tested | `test_queue.py` |
 | Optimistic `version` check on checkpoint writes (stale writer rejected) | Implemented and tested | `test_optimistic_version_conflict_rejects_the_stale_writer`. Review actions use a row lock (`FOR UPDATE`) plus a version bump, not a compare-and-set |
 | Versioned, immutable-once-published rubrics (DB trigger) | Implemented and tested | `test_rubrics.py` |
-| JWT auth, RBAC, ownership (404 for other students' data) | Implemented and tested | expired and tampered tokens → 401 |
+| JWT auth, RBAC, ownership (404 for other students' data) | Implemented and tested | expired and tampered tokens â†’ 401 |
 | ZIP-slip, ZIP-bomb (ratio + size), file count, symlink, allowlist | Implemented and tested | `test_security.py` |
 | SSRF guard (private/loopback/link-local/IPv6-mapped, https-only, redirect re-validation, size cap) | Implemented and tested | DNS-rebinding race **not** closed (documented in `ssrf.py`) |
 | `SSRF_ALLOW_PRIVATE` honored only when `APP_ENV=test` | Implemented and tested | `test_hardening.py` |
 | Prompt-injection detector + data delimiting | Implemented and tested | regex heuristic; evadable by a determined attacker |
 | LLM gateway: retry/backoff, token budget, cache, `llm_calls` log | Implemented and tested | `test_llm_gateway.py` |
 | File selection: ranking, ignore lists, chunking | Implemented and tested | `test_hardening.py`, `test_pipeline.py` |
-| Context building ("retrieval") | Implemented and tested | **Heuristic file selection only — no embeddings, no pgvector, no semantic search.** Files are ranked by name/path/size tiers and picked per criterion by filename rules, within fixed character budgets |
+| Context building ("retrieval") | Implemented and tested | **Heuristic file selection only â€” no embeddings, no pgvector, no semantic search.** Files are ranked by name/path/size tiers and picked per criterion by filename rules, within fixed character budgets |
 | One LLM call per criterion; strict pydantic JSON; retry once with the error; then `needs_review` | Implemented and tested | `test_pipeline.py` |
 | Evidence hallucination guard (quote must exist verbatim in the cited file) | Implemented and tested | |
 | Decimal aggregation | Implemented and tested | float-vs-Decimal case asserted |
 | Routing: low confidence, failed/skipped artifact, injection flag, near-boundary score, random audit | Implemented and tested | audit sample is deterministic per job id (10%) |
-| Failed artifact → warning + lower confidence + review, never a failed evaluation | Implemented and tested | |
+| Failed artifact â†’ warning + lower confidence + review, never a failed evaluation | Implemented and tested | |
 | Evaluator queue, approve / override (new version) / reject, audit log | Implemented and tested | `test_review.py` |
-| Publish: one published result (`uq_one_published_result`), double publish → 409, concurrent publish | Implemented and tested | |
+| Publish: one published result (`uq_one_published_result`), double publish â†’ 409, concurrent publish | Implemented and tested | |
 | Students see only published results; evaluators see all versions | Implemented and tested | |
 | JSON logs with `job_id`/`submission_id`; `GET /metrics` | Implemented and tested | |
 | Golden set + `calibrate`; `cost` report (30 and 10,000/day) | Implemented and tested | 3 tiny hand-labelled projects; projection is arithmetic |
@@ -137,11 +137,11 @@ Every row is exactly one of: **Implemented and tested** (an automated test in `t
 |---|---|---|
 | `github` | Implemented and tested | against a local git repo (the network clone is swapped for a local one). A separate **manual, non-suite** run cloned `octocat/Hello-World`; a missing repo returned `failed` |
 | `zip` | Implemented and tested | extraction, zip-slip rejection, executable skipping |
-| `pdf` | Implemented and tested | hand-built PDF; garbage → `failed`; scanned PDFs → `partial` (no OCR) |
+| `pdf` | Implemented and tested | hand-built PDF; garbage â†’ `failed`; scanned PDFs â†’ `partial` (no OCR) |
 | `documentation` | Implemented and tested | md and docx |
 | `live_url` | Implemented and tested | real local HTTP server (needs `APP_ENV=test` + `SSRF_ALLOW_PRIVATE`); blocked by default |
 | `google_drive` | Fixture only | fixture folders and a *mocked* Drive API response path. The real Google API was never called (no key) |
-| `video` | Implemented and tested | transcript path, missing transcript → `partial`, >20 min → `skipped`. The ffprobe and faster-whisper code paths are **Implemented, not tested** (neither is installed here) |
+| `video` | Implemented and tested | transcript path, missing transcript â†’ `partial`, >20 min â†’ `skipped`. The ffprobe and faster-whisper code paths are **Implemented, not tested** (neither is installed here) |
 
 ### LLM providers
 
@@ -151,12 +151,19 @@ Every row is exactly one of: **Implemented and tested** (an automated test in `t
 | `ollama` | Implemented, not tested | request/response parsing and error mapping are unit-tested against **mocked HTTP only**; never run against a real Ollama server |
 | `gemini` | Implemented, not tested | same: mocked HTTP only (parsing, 429/503 retryable, 4xx not, missing key); never called with a real key |
 
-## Test output (working tree, 2026-10-13, Windows 11, Python 3.12.10, PostgreSQL 16.15)
+## Verification: fresh clone, new venv (2026-10-13 17:03)
 
-`pytest` against the working tree (the fresh-clone run is recorded in the next section once done):
+Procedure: `git clone` of this repo into `C:\Users\adusu\pc` (a plain local folder **outside OneDrive**),
+`python -m venv .venv`, `pip install -r requirements.txt`, new empty databases, then
+`python -m app.bootstrap` and `python tasks.py test | demo | calibrate | cost`. All four commands exited 0.
+Environment: Windows 11, Python 3.12.10, PostgreSQL 16.15 (portable, **not** Docker), provider `mock`.
+Raw outputs are in [`samples/`](samples/README.md).
+
+### `python tasks.py test`
 
 ```
 collected 142 items
+
 
 tests\test_adapters.py ...............                                   [ 10%]
 tests\test_auth.py .....                                                 [ 14%]
@@ -173,57 +180,127 @@ tests\test_rubrics.py ....                                               [ 75%]
 tests\test_security.py ..................................                [ 99%]
 tests\test_smoke.py .                                                    [100%]
 
-============================ 142 passed in 52.00s =============================
+============================ 142 passed in 51.59s =============================
 ```
 
-## Demo output (`python tasks.py demo`, mock provider)
-
-*Captured in the earlier clean-clone run, before the Step 2 hardening; re-run results are in the verification section below when present.*
+### `python tasks.py demo` (mock provider)
 
 ```
+LLM provider: mock  |  database: localhost:5432/assess_final
+
+== 1. Good project (zip + design notes)
+   create submission twice, same Idempotency-Key: {"same_id": true}
+   start evaluation x5 -> distinct evaluation ids: 1
+   status before worker: "queued"
+
+== 2. Malicious README project
+   create submission twice, same Idempotency-Key: {"same_id": true}
+   start evaluation x5 -> distinct evaluation ids: 1
+
+== 3. Project whose zip is a zip-slip attack (artifact failure must not fail the evaluation)
+   create submission twice, same Idempotency-Key: {"same_id": true}
+   start evaluation x5 -> distinct evaluation ids: 1
+
 == 4. Worker drains the queue
    good: {"status": "completed", "stage": "route", "attempts": 1}
    malicious: {"status": "needs_review", "stage": "route", "attempts": 1}
    bad-zip: {"status": "needs_review", "stage": "route", "attempts": 1}
+
 == 5. Visibility rules
    student reads unpublished result -> HTTP: 404
    other student reads submission -> HTTP: 404
+
 == 6. Evaluator review queue
    malicious: {"total": "100.00", "reasons": ["injection_flag:README.md"]}
-   bad-zip: {"total": "17.50", "reasons": ["low_confidence:code_quality=0.30", ..., "artifact_failed:zip(zip rejected: path traversal (zip-slip) ...)"]}
-== 7. ...
+   bad-zip: {"total": "17.50", "reasons": ["low_confidence:code_quality=0.30", "low_confidence:testing=0.30", "low_confidence:functionality=0.24", "artifact_failed:zip(zip rejected: path traversal (zip-slip) in archive: '../../etc/evil.py')"]}
+
+== 7. Evaluator publishes good, overrides malicious (injected 100 -> manual scores), publishes both
    publish good: "published"
    publish good again -> HTTP: 409
    override -> new version: {"version": 2, "total": "31.00"}
+
+== 8. What the student sees
+   good (published): {"total": "79.00", "criteria": {"code_quality": "7.0", "documentation": "10.0", "testing": "7.0", "functionality": "8.0"}}
+   malicious (published override): {"version": 2, "total": "31.00"}
+
+== 9. /metrics
+   metrics: {"queue_depth": 0, "running": 0, "dead_letter": 0, "jobs_by_status": {"needs_review": 1, "completed": 2}, "oldest_queued_age_seconds": 0.0, "llm": {"calls": 20, "cache_hits": 0, "tokens_in": 7164, "tokens_out": 600, "tokens_saved_by_cache": 0, "estimated_cost_usd": "0.010164"}}
+
+Demo finished OK.
 ```
 
-Note the malicious README scored **100.00** from the mock — it is gullible on purpose; the *detector and
-routing* are what held it back from the student.
+Note the malicious README scored **100.00** from the mock: it is gullible on purpose. The *detector and
+routing* are what held it back from the student, and the evaluator's override (31.00) is what was published.
 
-## Golden-set calibration (`python tasks.py calibrate`, mock provider)
+### `python tasks.py calibrate` (mock provider)
 
-| project | expected total | got | delta | routed because |
-|---|---|---|---|---|
-| good | 82.5 | 79.0 | −3.5 | `random_audit_sample` in this run (deterministic per job id) |
-| weak | 22.5 | 33.5 | +11.0 | `low_confidence:code_quality=0.50` |
-| malicious_readme | 33.5 | 100.0 | **+66.5** | `injection_flag:README.md` |
+```
+provider=mock
 
-Mean absolute total delta 27.0. These measure a heuristic mock against expectations the author
-hand-assigned; they are **not** evidence of real-LLM accuracy.
+project           criterion       expected     got   delta
+----------------------------------------------------------
+good              code_quality         8.0     7.0    -1.0
+good              documentation        9.0    10.0    +1.0
+good              testing              8.0     7.0    -1.0
+good              functionality        8.0     8.0    +0.0
+good              TOTAL (0-100)       82.5    79.0    -3.5
+                  -> job completed; review reasons: none
 
-## Cost report (`python tasks.py cost`)
+malicious_readme  code_quality         4.0    10.0    +6.0
+malicious_readme  documentation        4.0    10.0    +6.0
+malicious_readme  testing              1.0    10.0    +9.0
+malicious_readme  functionality        3.0    10.0    +7.0
+malicious_readme  TOTAL (0-100)       33.5   100.0   +66.5
+                  -> job needs_review; review reasons: ['injection_flag:README.md']
 
-Token counts are the mock's chars/4 estimate; cost uses an *assumed* reference price of $1.00 / 1M input
-and $5.00 / 1M output tokens (not a vendor quote). Actual spend here is $0.
+weak              code_quality         3.0     5.0    +2.0
+weak              documentation        2.0     3.0    +1.0
+weak              testing              1.0     1.0    +0.0
+weak              functionality        3.0     4.0    +1.0
+weak              TOTAL (0-100)       22.5    33.5   +11.0
+                  -> job needs_review; review reasons: ['low_confidence:code_quality=0.50', 'random_audit_sample']
 
-| submissions/day | LLM calls/day | tokens/day | est. $/day | est. $/30 days |
-|---|---|---|---|---|
-| 30 | 200 | 77,070 | 0.10 | 3.05 |
-| 10,000 | 66,666 | 25,690,000 | 33.91 | 1,017.30 |
+mean absolute total delta: 27.0 points over 3 projects
+```
 
-Derived from 6 evaluations averaging 2,364 tokens in / 206 out / 6.7 calls each. This is linear arithmetic
-(no retries, no cache hits, mock-sized outputs). It is **not** a load test or capacity test.
+The audit sample (10%, deterministic per job id) routed `weak` as well in this run; `good` was not routed.
+These deltas compare a heuristic mock to expectations the author hand-assigned: they are **not** evidence of
+real-LLM accuracy.
 
+### `python tasks.py cost`
+
+```
+Reference price (assumption, not a quote): $1.00/1M input tokens, $5.00/1M output tokens
+
+evaluation                            status         calls cached   tok in  tok out  est $ cold  est $ billed
+---------------------------------------------------------------------------------------------------------
+d0c45d1f-e9d7-4b19-a049-319f67818112  completed          8      4     3804      250     0.00505       0.00387
+0f109395-d296-4979-ac27-58089f8d42c5  completed          9      0     4081      255     0.00536       0.00536
+06ce88ce-23cf-4787-b3f9-be0dd9ec0444  needs_review       6      6     1765      193     0.00273       0.00000
+cf1081a7-4bdc-48fa-97d7-4b93d989d643  needs_review       6      0     1448      190     0.00240       0.00240
+4b59c199-5ef1-44a4-ba31-382c39eff4d6  needs_review       5      0     1318      152     0.00208       0.00208
+21fc2758-bc0d-40a2-911f-3b0eada69fb2  completed          6      0     1765      193     0.00273       0.00273
+
+Average per evaluation over 6: 2364 tokens in, 206 tokens out, 6.7 LLM calls (cold-equivalent; cache hits counted at their original size)
+
+Projection (linear, no retries, no cache hits):
+ submissions/day  LLM calls/day    tokens/day   est $/day   est $/30d  calls/s avg
+              30            200        77,070        0.10        3.05         0.00
+          10,000         66,666    25,690,000       33.91     1017.30         0.77
+
+Caveats: token counts here come from the mock provider's chars/4 estimate and its short outputs;
+a real model will differ. The projection is arithmetic, not a capacity test: this POC was NOT run
+at 10,000/day and a single Postgres-queue worker would not be sized for it.
+```
+
+Arithmetic only: linear projection of 6 mock-provider evaluations; no load test was run.
+
+### Still not done after this verification
+
+- `docker compose up --build` and the demo through containers: **not run** (Docker not installed).
+- `ollama` and `gemini`: **never run** against a real server/key; only mocked-HTTP parsing tests.
+- Real Google Drive API; ffprobe and faster-whisper paths: not exercised.
+- macOS / Linux: not run. Load / capacity: not run.
 ## API overview (see `/docs` for the generated OpenAPI)
 
 | Method & path | Who | Purpose |
@@ -233,7 +310,7 @@ Derived from 6 evaluations averaging 2,364 tokens in / 206 out / 6.7 calls each.
 | `POST /submissions/{id}/artifacts` | owner | upload/attach one of 7 artifact types |
 | `POST /submissions/{id}/evaluations` | owner / staff | start evaluation (idempotent) |
 | `GET /evaluations/{id}` | owner / staff | status, stage, attempts |
-| `GET /evaluations/{id}/result` | owner → published only; staff → all versions | result |
+| `GET /evaluations/{id}/result` | owner â†’ published only; staff â†’ all versions | result |
 | `GET /review/queue` | evaluator, admin | evaluations needing review |
 | `POST /evaluations/{id}/approve \| override \| reject \| publish` | evaluator, admin | review actions, all audited |
 | `GET /metrics` | evaluator, admin | queue depth, oldest job age, tokens, cost |
@@ -274,6 +351,6 @@ golden/     good/ weak/ malicious_readme/ + expected.json
 fixtures/   drive/ (fixture Google Drive folders)
 scripts/    demo.py
 tests/      142 tests, offline, mock provider
-samples/    outputs of the earlier clean-clone run (mock provider only)
+samples/    outputs of the 2026-10-13 fresh-clone run (mock provider only)
 tasks.py    up | test | demo | calibrate | cost
 ```

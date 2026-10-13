@@ -1,13 +1,13 @@
-Reference price (assumption, not a quote): $1.00/1M input tokens, $5.00/1M output tokens
+﻿Reference price (assumption, not a quote): $1.00/1M input tokens, $5.00/1M output tokens
 
 evaluation                            status         calls cached   tok in  tok out  est $ cold  est $ billed
 ---------------------------------------------------------------------------------------------------------
-ce9bf7d9-ec8f-4dbe-8e63-db530c6b5aee  completed          6      0     1765      193     0.00273       0.00273
-97c22a80-399b-4aa9-9ef7-8863fd84fb55  needs_review       6      6     1765      193     0.00273       0.00000
-d510722a-8429-4c6d-8a06-8e581ec94535  needs_review       8      4     3804      250     0.00505       0.00387
-e688214a-165c-4d5e-a473-4623a0afd4bd  needs_review       5      0     1318      152     0.00208       0.00208
-4286c2a8-5a64-43bc-ab5a-fe744e260e0e  needs_review       6      0     1448      190     0.00240       0.00240
-2f0df405-7b52-452d-99fb-d83e5dc3739c  completed          9      0     4081      255     0.00536       0.00536
+d0c45d1f-e9d7-4b19-a049-319f67818112  completed          8      4     3804      250     0.00505       0.00387
+0f109395-d296-4979-ac27-58089f8d42c5  completed          9      0     4081      255     0.00536       0.00536
+06ce88ce-23cf-4787-b3f9-be0dd9ec0444  needs_review       6      6     1765      193     0.00273       0.00000
+cf1081a7-4bdc-48fa-97d7-4b93d989d643  needs_review       6      0     1448      190     0.00240       0.00240
+4b59c199-5ef1-44a4-ba31-382c39eff4d6  needs_review       5      0     1318      152     0.00208       0.00208
+21fc2758-bc0d-40a2-911f-3b0eada69fb2  completed          6      0     1765      193     0.00273       0.00273
 
 Average per evaluation over 6: 2364 tokens in, 206 tokens out, 6.7 LLM calls (cold-equivalent; cache hits counted at their original size)
 
