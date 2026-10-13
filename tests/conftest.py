@@ -76,3 +76,9 @@ class Api:
 @pytest.fixture
 def api(client):
     return Api(client)
+
+@pytest.fixture(autouse=True)
+def no_random_audit(monkeypatch):
+    """Random audit sampling is deterministic per job id; switch it off so tests are not order-dependent."""
+    from app.pipeline import routing
+    monkeypatch.setattr(routing, "AUDIT_PERCENT", 0)

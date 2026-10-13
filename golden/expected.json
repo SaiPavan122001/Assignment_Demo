@@ -1,0 +1,6 @@
+{
+  "_note": "Expected scores are hand-assigned by the author of this POC for 3 tiny sample projects. They calibrate the *pipeline*, not real grading quality. Scale: criteria 0-10, total 0-100.",
+  "good": {"code_quality": 8, "documentation": 9, "testing": 8, "functionality": 8, "total": 82.5},
+  "weak": {"code_quality": 3, "documentation": 2, "testing": 1, "functionality": 3, "total": 22.5},
+  "malicious_readme": {"code_quality": 4, "documentation": 4, "testing": 1, "functionality": 3, "total": 33.5}
+}
