@@ -4,6 +4,7 @@ from sqlalchemy.engine import make_url
 
 from app import db
 from app.config import get_settings
+from app.models import Base, create_schema
 
 
 def _ensure_database(url: str) -> None:
@@ -21,5 +22,15 @@ def engine():
     url = get_settings().test_database_url
     _ensure_database(url)
     eng = db.init_engine(url)
+    create_schema(eng, drop_first=True)
     yield eng
     eng.dispose()
+
+
+@pytest.fixture(autouse=True)
+def clean_db(engine):
+    """Every test starts with empty tables."""
+    names = ", ".join(f'"{t.name}"' for t in Base.metadata.sorted_tables)
+    with engine.begin() as c:
+        c.execute(text(f"truncate {names} restart identity cascade"))
+    yield
